@@ -3,6 +3,7 @@ package com.coxautodev.graphql.tools
 import com.coxautodev.graphql.tools.SchemaParserOptions.GenericWrapper
 import com.esotericsoftware.reflectasm.MethodAccess
 import com.fasterxml.jackson.core.type.TypeReference
+import graphql.TrivialDataFetcher
 import graphql.execution.batched.Batched
 import graphql.language.FieldDefinition
 import graphql.language.NonNullType
@@ -143,7 +144,7 @@ internal class MethodFieldResolver(field: FieldDefinition, search: FieldResolver
     override fun toString() = "MethodFieldResolver{method=$method}"
 }
 
-open class MethodFieldResolverDataFetcher(private val sourceResolver: SourceResolver, method: Method, private val args: List<ArgumentPlaceholder>, private val options: SchemaParserOptions) : DataFetcher<Any> {
+open class MethodFieldResolverDataFetcher(private val sourceResolver: SourceResolver, method: Method, private val args: List<ArgumentPlaceholder>, private val options: SchemaParserOptions) : DataFetcher<Any>, TrivialDataFetcher<Any> {
 
     // Convert to reflactasm reflection
     private val methodAccess = MethodAccess.get(method.declaringClass)!!
