@@ -14,9 +14,6 @@ import kotlinx.coroutines.future.future
 import java.lang.reflect.Method
 import java.util.*
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
-import kotlin.reflect.full.valueParameters
-import kotlin.reflect.jvm.javaType
-import kotlin.reflect.jvm.kotlinFunction
 
 /**
  * @author Andrew Potter
@@ -106,7 +103,16 @@ internal class MethodFieldResolver(field: FieldDefinition, search: FieldResolver
         return if (batched) {
             BatchedMethodFieldResolverDataFetcher(getSourceResolver(), this.method, args, options)
         } else {
-            MethodFieldResolverDataFetcher(getSourceResolver(), this.method, args, options)
+            if (args.size == 0
+                    && this.method.getParameterCount() == 0
+                    && this.method.getName().startsWith("get")
+                    && this.search.type is java.lang.reflect.Class
+                    && (this.search.type as java.lang.reflect.Class).getMethod(this.method.getName()) != null) {
+                TrivialMethodFieldResolverDataFetcher(getSourceResolver(), this.method, args, options);
+            } else {
+                MethodFieldResolverDataFetcher(getSourceResolver(), this.method, args, options)
+            }
+
         }
     }
 
@@ -144,7 +150,7 @@ internal class MethodFieldResolver(field: FieldDefinition, search: FieldResolver
     override fun toString() = "MethodFieldResolver{method=$method}"
 }
 
-open class MethodFieldResolverDataFetcher(private val sourceResolver: SourceResolver, method: Method, private val args: List<ArgumentPlaceholder>, private val options: SchemaParserOptions) : DataFetcher<Any>, TrivialDataFetcher<Any> {
+open class MethodFieldResolverDataFetcher(private val sourceResolver: SourceResolver, method: Method, private val args: List<ArgumentPlaceholder>, private val options: SchemaParserOptions) : DataFetcher<Any> {
 
     // Convert to reflactasm reflection
     private val methodAccess = MethodAccess.get(method.declaringClass)!!
@@ -190,6 +196,10 @@ open class MethodFieldResolverDataFetcher(private val sourceResolver: SourceReso
     open fun getWrappedFetchingObject(environment: DataFetchingEnvironment): Any {
         return sourceResolver(environment)
     }
+}
+
+open class TrivialMethodFieldResolverDataFetcher(private val sourceResolver: SourceResolver, method: Method, private val args: List<ArgumentPlaceholder>, private val options: SchemaParserOptions) : MethodFieldResolverDataFetcher(sourceResolver, method, args, options), TrivialDataFetcher<Any> {
+
 }
 
 private suspend inline fun MethodAccess.invokeSuspend(target: Any, methodIndex: Int, args: Array<Any?>): Any? {
